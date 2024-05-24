@@ -1,9 +1,12 @@
 #!/bin/bash
-# Copyright (c) 2024, NVIDIA CORPORATION
+# SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 
 set -euo pipefail
 
 . /opt/conda/etc/profile.d/conda.sh
+
+rapids-logger "Starting Conda Package Test"
 
 rapids-logger "Creating Test Environment"
 rapids-mamba-retry create -n test
@@ -15,12 +18,14 @@ set -u
 
 rapids-logger "Add conda build output dir to channel"
 ls $RAPIDS_CONDA_BLD_OUTPUT_DIR
-conda config --add channels $RAPIDS_CONDA_BLD_OUTPUT_DIR/linux-64
-ls $RAPIDS_CONDA_BLD_OUTPUT_DIR/linux-64
+
+conda index  $RAPIDS_CONDA_BLD_OUTPUT_DIR/
+conda config --add channels $RAPIDS_CONDA_BLD_OUTPUT_DIR
 
 rapids-print-env
 
 rapids-mamba-retry install \
+  click \
   pytest \
   ast_canopy \
   numbast \
@@ -37,7 +42,8 @@ trap "EXITCODE=1" ERR
 set +e
 
 rapids-logger "Run Tests"
-./ci/run_tests.sh
+# Debug print
+python ci/run_tests.py --ast-canopy --numbast --bf16
 
 rapids-logger "Test script exiting with value: $EXITCODE"
 exit ${EXITCODE}
